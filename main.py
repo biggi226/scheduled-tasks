@@ -14,25 +14,25 @@ import os
 
 # import os and use it to get the Github repository secrets
 MY_EMAIL = os.environ.get("MY_EMAIL")
-MY_PASSWORD = os.environ.get("MY_PASSWORD")
+PASSWORD = os.environ.get("MY_PASSWORD")
 
-today = datetime.now()
-today_tuple = (today.month, today.day)
-
-data = pandas.read_csv("birthdays.csv")
-birthdays_dict = {(data_row["month"], data_row["day"])                  : data_row for (index, data_row) in data.iterrows()}
-if today_tuple in birthdays_dict:
-    birthday_person = birthdays_dict[today_tuple]
-    file_path = f"letter_templates/letter_{random.randint(1, 3)}.txt"
-    with open(file_path) as letter_file:
-        contents = letter_file.read()
-        contents = contents.replace("[NAME]", birthday_person["name"])
-
-    with smtplib.SMTP("YOUR EMAIL PROVIDER SMTP SERVER ADDRESS") as connection:
+def sender(email, message):
+    with smtplib.SMTP("smtp.gmail.com", 587) as connection:
         connection.starttls()
-        connection.login(MY_EMAIL, MY_PASSWORD)
-        connection.sendmail(
-            from_addr=MY_EMAIL,
-            to_addrs=birthday_person["email"],
-            msg=f"Subject:Happy Birthday!\n\n{contents}"
-        )
+        connection.login(user=MY_EMAIL, password=PASSWORD)
+        connection.sendmail(from_addr=MY_EMAIL, to_addrs=email,
+                            msg=f"Subject:Happy Birthday!\n\n{message}")
+
+this_month = dt.datetime.now().month
+today = dt.datetime.now().day
+my_birthday_db = pandas.read_csv("birthdays.csv")
+birthdays_db = my_birthday_db.to_dict(orient="records")
+
+my_wish_list = []
+for smth in birthdays_db:
+    if smth["month"] == this_month and smth["day"] == today:
+        letters_path = f"letter_templates/letter_{random.randint(1,3)}.txt"
+        with open(letters_path, "r") as quote_file:
+            my_email_content = quote_file.read()
+            my_email_content = my_email_content.replace("[NAME]", smth["name"])
+            sender(smth["email"], my_email_content)
